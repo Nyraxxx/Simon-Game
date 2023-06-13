@@ -17,9 +17,10 @@ void timer_init(void) {
     TCB0.CTRLA = TCB_ENABLE_bm;         // Enable
     sei(); 
 }
-
+//need to do something here with playback delay?
 ISR(TCB0_INT_vect) {
     pb_debounce();
+
     static uint8_t digit = 0;    
 
     if (digit) {

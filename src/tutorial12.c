@@ -1,75 +1,83 @@
 #include <avr/io.h>
+#include<stdio.h>
+#include<stdlib.h>
 #include "timer.h"
 #include "spi.h"
 #include "buzzer.h"
 
-/***
- * Tutorial 12: Introduction
- *
- * In this week's tutorial you will implement a music player.  Pressing
- * each QUTy pushbutton will result in a tone being played.  In addition,
- * the two segments of the 7-segment display above the pushbutton will
- * be lit.
- *
- * The frequencies of the four tones are as follows:
- *
- * TONE1             TONE2             TONE3     TONE4
- * 4XX * 2^(-5/12)   4XX * 2^(-8/12)   4XX       4XX * 2^(-17/12)
- *
- * where XX are the last two digits of your student number.
- *
- * Playing a tone and lighting the segemnts above the pushbutton when the
- * pushbutton is pressed is a requirement for Assessment 2.
- *
- * Code has already been provided in timer.c and spi.c, for dispalying
- * the segment pattern in segs[0] and segs[1] to the two digits of the
- * 7-segment display.  This code uses TCB0 with a periodic interrupt
- * every 10ms to refresh the 7-segment display.  It also uses the SPI
- * peripheral and the SPI0 interrupt to provide a rising edge on
- * DISP_LATCH, so that the bits shifted out through SPI_MOSI appear
- * on bits Q0-7 of the SHIFT register, which drive the inputs of
- * the 7-segment display.
- */
-
-//     ABCDEFG
-//    xFABGCDE
+//Definitions for segments to light up 
 #define SEGS_EF 0b00111110
 #define SEGS_BC 0b01101011
 #define SEGS_OFF 0b01111111
 
+//button pin bitmaps
 #define PB1 PIN4_bm
 #define PB2 PIN5_bm
 #define PB3 PIN6_bm
 #define PB4 PIN7_bm
 
-#define cmpp1 = (5482)
+//Compare values for tone (pre calculated)
+#define cmpp1 = 5482
 #define cmpp2 = 6511
 #define cmpp3 = 4105
 #define cmpp4 = 109645
 
+//array for triggering the correct segments
 volatile uint8_t segs[] = {SEGS_OFF, SEGS_OFF}; // segs initially off
 
+//debouncing for what???
+//inital debouncing variables, initially 0 as no debouncing has occured
 volatile uint8_t pb_debounced = 0xFF;
+uint8_t pb_previous_state = 0xFF;
+uint8_t pb_new_state = 0xFF;
+
+int sequenceSTEP(){
+    static uint8_t MASK = 0xE2023CAB;
+    volatile uint8_t STATE_LFSR = 0x11079606;
+    //get LSB
+   volatile uint8_t BIT = STATE_LFSR | 0x00000001;
+   STATE_LFSR = STATE_LFSR >> 1;
+   if (BIT == 1){
+    STATE_LFSR = STATE_LFSR ^ MASK;
+
+   }
+   volatile uint8_t STEP = STATE_LFSR & 0b11;
+    spi_write(STEP);
+    return STEP;
+}
+volatile uint16_t sequence_store[51];
+volatile uint16_t player_input[51];
+int sequence_GEN(void){
+    uint16_t i;
+    
+    for (i = 0; i <= 51; i++){
+        sequence_store[i] = sequenceSTEP();
+        spi_write(sequence_store[i]);
+    }
+    
+
+
+    
+}
 
 void pb_init(void)
 {
     // already configured as inputs
-
     // PBs PA4-7, enable pullup resistors
     PORTA.PIN4CTRL = PORT_PULLUPEN_bm;
     PORTA.PIN5CTRL = PORT_PULLUPEN_bm;
     PORTA.PIN6CTRL = PORT_PULLUPEN_bm;
     PORTA.PIN7CTRL = PORT_PULLUPEN_bm;
 }
-uint8_t pb_previous_state = 0xFF;
-uint8_t pb_new_state = 0xFF;
+
+//debouncing function for pushbuttons
 void pb_debounce(void)
 {
-    // Write your code for Ex 12.4 here
-    static uint8_t count0 = 0;
 
+    static uint8_t count0 = 0;
     static uint8_t count1 = 0;
 
+    //check if button has been pushed
     uint8_t pb_edge = pb_debounced ^ PORTA.IN;
 
     // Vertical counter
@@ -84,16 +92,9 @@ void pb_debounce(void)
 
     pb_debounced ^= (count1 & count0);
 
-    // Write your code for Ex 12.4 above this line
 }
 
-/***
- * Ex 12.0
- *
- * Declare an enumerated type (enum) that can hold the values of each state
- * required to implement the state machine in "state_machine_tut12.png".
- * Use meaningful names for each enum value.
- */
+
 typedef enum
 {
     TONE1,
@@ -102,55 +103,124 @@ typedef enum
     TONE4,
     WAIT
 
-} state_def;
+} tone_state;
 // Write your code for Ex 12.0 above this line
+
+void sequence_play(uint8_t num){
+    
+    switch(num){
+        //turn off
+        
+        case 0:
+        //buzzer off initially
+            delay(1);
+          //need delays!! playback bullshit ISR?
+          
+                segs[0] = SEGS_OFF;
+                segs[1] = SEGS_OFF;
+                TCA0.SINGLE.CMP0BUF = 0; 
+            
+            
+        break;
+        //tone 1
+        //play tone, then go into off sequence with timer (?)
+        case 1:
+                num = 0;
+            
+                segs[0] = SEGS_EF;
+                segs[1] = SEGS_OFF;
+                TCA0.SINGLE.PERBUF = TONE1_PER;
+                TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
+                
+             
+        break;
+        //tone 2
+        case 2:
+                num = 0;
+            
+                segs[0] = SEGS_BC;
+                segs[1] = SEGS_OFF;
+                TCA0.SINGLE.PERBUF = TONE2_PER;
+                TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
+        break;
+        //tone 3
+        case 3:
+                num = 0;
+                
+                segs[1] = SEGS_EF;
+                segs[0] = SEGS_OFF;
+                TCA0.SINGLE.PERBUF = TONE3_PER;
+                TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
+        break;
+        //tone 4
+        case 4:
+                num = 0;
+              
+                segs[1] = SEGS_BC;
+                segs[0] = SEGS_OFF;
+                TCA0.SINGLE.PERBUF = TONE4_PER;
+                TCA0.SINGLE.CMP0BUF = TONE4_PER >> 1;
+        break;
+    }
+}
 
 int main(void)
 {
+    //calling initialisation functions
     pb_init();
     timer_init();
     spi_init();
     buzzer_init();
+    sequence_GEN();
 
-    /***
-     * Ex 12.1
-     *
-     * Declare a variable below, of the enumerated type you declared above.
-     * Initialise this variable with the initial state of the state machine.
-     *
-     */
-    state_def state = WAIT;
+ //initial state call
+    tone_state state = WAIT;
 
-    // Write your code for Ex 12.1 above this line
+//initial sequence length
+volatile uint16_t seq_len = 0;
 
-    /***
-     * Ex 12.2
-     *
-     * Complete the code in the function buzzer_init(void) (in file buzzer.c)
-     * to initialise PORTB PIN0 and TCA0 to drive the buzzer.
-     *
-     * Determine your frequencies according to your student number, and
-     * work out appropriate values for TCA0.SINGLE.PER in each case.
-     * Update the #defines in buzzer.h to reflect these values.
-     *
-     * Do not write your code here, edit function buzzer_init(void) in file
-     * buzzer.c and #defines in buzzer.h.
-     *
-     */
-
+//main loop
     while (1)
     {
-
-        // uint8_t pb_edge = pb_debounced ^ PORTA.IN;
-
         // determine pushbutton state
 
         pb_previous_state = pb_new_state;
         pb_new_state = pb_debounced;
 
+        //find falling edge
         uint8_t pb_falling_edge = (pb_previous_state ^ pb_new_state) & pb_previous_state;
+        //find rising edge
         uint8_t pb_rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
 
+        //SIMON LOGIC (????)
+        
+        /*
+        start
+        show sequence
+        wait for input
+        */
+       uint8_t current_step = 0;
+       int j;
+        for (j = 0; j <= current_step; j++){
+           //play tone/display current step in sequence 
+            sequence_play(sequence_store[j]);
+
+        }
+        int k;
+        for (k = 0; k <=current_step; k++){
+            if (sequence_store[k] = player_input[k]){
+                //score + 1 
+                //win
+            }else{
+                current_step = 0;
+                //lose
+                //state = high score
+            }
+        }
+        //state machine START for tone and light up
+        //edit this so it only goes for playback time not until button unpressed  
+
+       //player input???
         switch (state)
         {
         case WAIT:
@@ -164,6 +234,8 @@ int main(void)
                 segs[1] = SEGS_OFF;
                 TCA0.SINGLE.PERBUF = TONE1_PER;
                 TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
+                player_input[current_step] = 1;
+                current_step += 1;
             }
             else if (pb_falling_edge & PB2)
             {
@@ -172,6 +244,8 @@ int main(void)
                 segs[1] = SEGS_OFF;
                 TCA0.SINGLE.PERBUF = TONE2_PER;
                 TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
+                player_input[current_step] = 2;
+                current_step += 1;
             }
             else if (pb_falling_edge & PB3)
             {
@@ -180,6 +254,8 @@ int main(void)
                 segs[0] = SEGS_OFF;
                 TCA0.SINGLE.PERBUF = TONE3_PER;
                 TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
+                player_input[current_step] = 3;
+                current_step += 1;
             }
             else if (pb_falling_edge & PB4)
             {
@@ -188,6 +264,8 @@ int main(void)
                 segs[0] = SEGS_OFF;
                 TCA0.SINGLE.PERBUF = TONE4_PER;
                 TCA0.SINGLE.CMP0BUF = TONE4_PER >> 1;
+                player_input[current_step] = 4;
+                current_step += 1;
             }
 
             break;
@@ -236,37 +314,4 @@ int main(void)
         }
     }
 
-    // Write your code for Ex 12.3 above this line
-
-    /***
-     * Ex 12.4
-     *
-     * Write the switch-case statement below that implements the state machine
-     * documented in "state_machine_tut12.png".
-     *
-     * Your switch statement should test the value of the variable declared
-     * in Ex 12.1. A case should be defined for every state in the state machine.
-     *
-     * Use the output of the code you wrote above in Ex 12.3 to trigger the
-     * appropriate transitions between states.
-     *
-     * For each state:
-     *    - write the appropriate value to segs[0] and segs[1] (SEGS_EF,
-     *      SEGS_BC, or SEGS_OFF)
-     *    - update TCAO PER and BUFn, and enable/disable TCA0 appropriately
-     *      so that tones of the four frequencies are sounded.
-     */
-
-    // Write your code for Ex 12.4 above this line
-
-    /* Ex 12.5
-     *
-     * Complete the code in pb_debounce(void) to provide a debounced
-     * pushbutton read.
-     *
-     * Note tha pb_debounced is already called in the periodic interrupt in
-     * timer.c.
-     *
-     * Do not write your code here, edit function pb_debouce above.
-     */
 }
