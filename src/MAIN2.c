@@ -109,7 +109,7 @@ void sequence_GEN(void)
         // printf("seq\n");
         // printf(sequence_store[i]);
         uint8_t seqq = sequence_store[i];
-       // printf("sequence step %d\n", seqq);
+        // printf("sequence step %d\n", seqq);
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
@@ -137,6 +137,7 @@ void test_play(uint8_t num, uint8_t playbac)
 void sequence_play(uint8_t num, uint8_t playback)
 {
     // this doesnt live update hmmm
+    int arb;
     uint8_t k = 0;
     uint8_t toggle = 1;
 
@@ -170,7 +171,6 @@ void sequence_play(uint8_t num, uint8_t playback)
             TCA0.SINGLE.PERBUF = TONE3_PER;
             TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
             toggle = 0;
-            
         }
         else if (num == 4)
         {
@@ -183,13 +183,15 @@ void sequence_play(uint8_t num, uint8_t playback)
         }
 
     case 0:
-        printf("CASE 0");
+       // printf("CASE 0");
 
         for (k = 0; k <= playback; k++)
         {
-            //printf("k = %d\n", k);
+            arb = arb + 1;
+
+           // printf("k%d", k);
         }
-        //printf("OFF");
+        // printf("OFF");
 
         segs[0] = SEGS_OFF;
         segs[1] = SEGS_OFF;
@@ -203,10 +205,11 @@ void sequence_play(uint8_t num, uint8_t playback)
 int main()
 {
     // initialise functions
-    timer_init();
+    
     spi_init();
     serial_init();
     buzzer_init();
+    timer_init();
     pot_init();
     pb_init();
     sequence_GEN();
@@ -217,10 +220,10 @@ int main()
     uint8_t current_step = 0;
     // sequence_play(1, 25);
     int j = 0;
-   
+
     tone_state state = WAIT_T;
     game_state game_state = PLAY_SEQUENCE;
-    int toggles = 1;
+
     // initial sequence length
 
     //--------------------------------------------------------------------------------------------------------------------
@@ -232,11 +235,32 @@ int main()
         uint8_t plybk = MAP(testt, 0, 255, 25, 200);
 
         //--------------------------------------------------------------------------------------------------------------------
-
+        int c;
+        int points;
         switch (game_state)
         {
         case WAIT:
-            game_state = PLAY_SEQUENCE;
+           
+            for (c = 0; c <= current_step; c++){
+                printf("play in %d\n", player_input[c]);
+                printf("seq st %d\n", sequence_store[c]);
+                if (points == current_step-1)
+                {
+                    printf("SEQ PLAY");
+                    game_state = PLAY_SEQUENCE;
+                }
+                else if (player_input[c] == sequence_store[c])
+                {
+                    printf("CORRECT\n");
+                    points = points +1;
+                }
+
+               else if (player_input[c] != sequence_store[c])
+                {
+                    printf("LOSE\n");
+                    game_state = GAME_OVER;
+                }
+            }
 
             break;
         case PLAY_SEQUENCE:
@@ -249,18 +273,15 @@ int main()
                 printf("j %d\n", j);
                 printf("step %d\n", current_step);
             }
-           
+
             current_step = current_step + 1;
-            toggles = 1;
             
-            game_state = PLAYER_INPUT;
+
+           game_state = PLAYER_INPUT;
 
             break;
         case PLAYER_INPUT:
 
-            printf("PLAYER IN");
-            while (toggles == 1)
-            {
 
                 pb_previous_state = pb_new_state;
                 pb_new_state = pb_debounced;
@@ -279,14 +300,15 @@ int main()
 
                     if (pb_falling_edge & PB1)
                     {
-                        
+
                         state = TONE1;
                         segs[0] = SEGS_EF;
                         segs[1] = SEGS_OFF;
                         TCA0.SINGLE.PERBUF = TONE1_PER;
                         TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
                         player_input[current_step] = 1;
-                        current_step += 1;
+            
+
                         printf("tone1");
                         printf("input %d \n", player_input[current_step]);
                     }
@@ -298,8 +320,9 @@ int main()
                         TCA0.SINGLE.PERBUF = TONE2_PER;
                         TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
                         player_input[current_step] = 2;
-                        current_step += 1;
-                        printf("tone2");
+                       
+
+                        printf("tone2\n");
                         printf("input %d \n", player_input[current_step]);
                     }
                     else if (pb_falling_edge & PB3)
@@ -310,8 +333,9 @@ int main()
                         TCA0.SINGLE.PERBUF = TONE3_PER;
                         TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
                         player_input[current_step] = 3;
-                        current_step += 1;
-                        printf("tone3");
+                       
+
+                        printf("tone3\n");
                         printf("input %d \n", player_input[current_step]);
                     }
                     else if (pb_falling_edge & PB4)
@@ -322,8 +346,9 @@ int main()
                         TCA0.SINGLE.PERBUF = TONE4_PER;
                         TCA0.SINGLE.CMP0BUF = TONE4_PER >> 1;
                         player_input[current_step] = 4;
-                        current_step += 1;
-                        printf("tone4");
+          
+
+                        printf("tone4\n");
                         printf("input %d \n", player_input[current_step]);
                     }
 
@@ -331,52 +356,58 @@ int main()
                 case TONE1:
                     if (pb_rising_edge & PB1)
                     {
-                        state = WAIT;
+                        
+                        game_state = WAIT;
+                        state = WAIT_T;
                         segs[0] = SEGS_OFF;
                         segs[1] = SEGS_OFF;
                         TCA0.SINGLE.CMP0BUF = 0;
-                        game_state = WAIT;
-                        toggles = 0;
+                        
+                        
                     }
 
                     break;
                 case TONE2:
                     if (pb_rising_edge & PB2)
                     {
-                        state = WAIT;
+                        
+                        game_state = WAIT;
+                        state = WAIT_T;
                         segs[0] = SEGS_OFF;
                         segs[1] = SEGS_OFF;
                         TCA0.SINGLE.CMP0BUF = 0;
-                        game_state = WAIT;
-                        toggles = 0;
+                       
+                        
                     }
 
                     break;
                 case TONE3:
                     if (pb_rising_edge & PB3)
                     {
-                        state = WAIT;
+                        game_state = WAIT;
+                        state = WAIT_T;
                         segs[0] = SEGS_OFF;
                         segs[1] = SEGS_OFF;
                         TCA0.SINGLE.CMP0BUF = 0;
-                        game_state = WAIT;
-                        toggles = 0;
+                       
+                        
                     }
 
                     break;
                 case TONE4:
                     if (pb_rising_edge & PB4)
                     {
-                        state = WAIT;
+                        game_state = WAIT;
+                        state = WAIT_T;
                         segs[0] = SEGS_OFF;
                         segs[1] = SEGS_OFF;
                         TCA0.SINGLE.CMP0BUF = 0;
-                        game_state = WAIT;
-                        toggles = 0;
+                       
+                        
                     }
                     break;
                 }
-            }
+            
 
             break;
         case GAME_OVER:
