@@ -1,5 +1,6 @@
 #include "timer.h"
 #include "spi.h"
+#include "uart(1).h"
 
 extern uint8_t digit1, digit2;
 extern uint8_t segs [];
@@ -10,23 +11,30 @@ void pb_debounce(void);
 
 void timer_init(void) {
     cli();
-//    TCB0.CTRLA = TCB_CLKSEL_DIV2_gc;    // Configure CLK_PER/2
+
     TCB0.CTRLB = TCB_CNTMODE_INT_gc;    // Configure TCB0 in periodic interrupt mode
     TCB0.CCMP = 33333;                   // Set interval for 10ms (33333 clocks @ 3.3 MHz)
     TCB0.INTCTRL = TCB_CAPT_bm;         // CAPT interrupt enable
     TCB0.CTRLA = TCB_ENABLE_bm;         // Enable
     sei(); 
 }
+
+void get_time(void){
+   uint16_t time = TCB0.CNT;
+   char *string = "hello";
+    
+}
+
 //need to do something here with playback delay?
 ISR(TCB0_INT_vect) {
-    pb_debounce();
+    //pb_debounce();
 
     static uint8_t digit = 0;    
 
     if (digit) {
-        spi_write(segs[0] | (0x01 << 7));
+       // spi_write(segs[0] | (0x01 << 7));
     } else {
-        spi_write(segs[1]);
+        //spi_write(segs[1]);
     }
     digit = !digit;
 

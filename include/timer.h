@@ -1,4 +1,5 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-void timer_init(void);
+//void timer_init(void);
+//void get_time(void);

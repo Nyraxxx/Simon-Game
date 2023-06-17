@@ -19,10 +19,10 @@ void spi_write(uint8_t b) {
     SPI0.DATA = b;
 }
 
-ISR(SPI0_INT_vect) {
+/*ISR(SPI0_INT_vect) {
     // Rising edge DISP LATCH
     PORTA.OUTCLR = PIN1_bm; 
     PORTA.OUTSET = PIN1_bm;
     //trigger flag
     SPI0.INTFLAGS = SPI_IF_bm;
-}
+}*/
