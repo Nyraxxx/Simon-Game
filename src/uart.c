@@ -3,12 +3,12 @@
 #include <stdint.h>
 
 void uart_init(void) {
-    //PORTB.DIRSET = PIN2_bm; // Enable PB2 as output (USART0 TXD)
-    //USART0.BAUD = 1389;     // 9600 baud @ 3.3 MHz
-    //USART0.CTRLB = USART_RXEN_bm | USART_TXEN_bm;   // Enable Tx/Rx
+    PORTB.DIRSET = PIN2_bm; // Enable PB2 as output (USART0 TXD)
+    USART0.BAUD = 1389;     // 9600 baud @ 3.3 MHz
+    USART0.CTRLB = USART_RXEN_bm | USART_TXEN_bm;   // Enable Tx/Rx
 }
 
-/*uint8_t uart_getc(void) {
+uint8_t uart_getc(void) {
     while (!(USART0.STATUS & USART_RXCIF_bm));  // Wait for data
     return USART0.RXDATAL;
 }
@@ -24,4 +24,4 @@ void uart_puts(char* string){
         uart_putc(*ptr);
         ptr++;
     }
-}*/
+}

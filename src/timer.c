@@ -1,11 +1,16 @@
 #include "timer.h"
 #include "spi.h"
-#include "uart(1).h"
+#include "uart.h"
 
 extern uint8_t digit1, digit2;
 extern uint8_t segs [];
 
-extern uint8_t pattern1, pattern2;
+
+// Compare values for tone (pre calculated)
+#define cmpp1 = 5482
+#define cmpp2 = 6511
+#define cmpp3 = 4105
+#define cmpp4 = 109645
 
 void pb_debounce(void);
 
@@ -27,14 +32,14 @@ void get_time(void){
 
 //need to do something here with playback delay?
 ISR(TCB0_INT_vect) {
-    //pb_debounce();
+    pb_debounce();
 
     static uint8_t digit = 0;    
 
     if (digit) {
-       // spi_write(segs[0] | (0x01 << 7));
+       spi_write(segs[0] | (0x01 << 7));
     } else {
-        //spi_write(segs[1]);
+        spi_write(segs[1]);
     }
     digit = !digit;
 

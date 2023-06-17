@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 //Function prototypes
 static int uart_putchar(char c, FILE *stream);
@@ -14,6 +15,15 @@ uint8_t rxbuf[256];             //Rx buffer
 volatile uint8_t pWrite = 0;    //Write index into Rx buffer
 uint8_t pRead = 0;     //Read index into Rx buffer
 
+int uart_putc_printf(char c, FILE *stream)
+{
+    uart_putc(c);
+    return 0;
+}
+
+static FILE mystdout = FDEV_SETUP_STREAM(uart_putc_printf, NULL, _FDEV_SETUP_WRITE);
+
+
 void serial_init(void) {
     // Set Tx pin as output
     PORTB.DIRSET = PIN2_bm;
@@ -25,6 +35,7 @@ void serial_init(void) {
     //Assign stream to stdio
     stdout = &uart;
     stdin = &uart;
+    stdout = &mystdout;
 }
 
 uint8_t serial_bytesAvailable(void) {
