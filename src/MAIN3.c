@@ -103,7 +103,7 @@ uint8_t current_input = 0;
 void sequence_GEN(void)
 {
     uint16_t i;
-    printf("SEQUENCE MASTER: \n");
+    printf("\nSEQUENCE MASTER: \n");
     for (i = 0; i <= 51; i++)
     {
         sequence_store[i] = sequence_STEP();
@@ -196,13 +196,16 @@ int main()
     game_state game_state = PLAY_SEQUENCE;
     tone_state state = WAIT_T;
     uint8_t current_index = 0;
-    uint8_t success = 0;
-    char UART_IN = getchar();
+  //  uint8_t success = 0;
+    char UART_IN;
+    //.char UART_IN = getchar();
     //--------------------------------------------------------------------------------------------------------------------
+    uint8_t success = 1;
+    uint8_t index_compare = 0;
     while (1)
     {
         // getchar
-        printf("%c\n", UART_IN);
+        // printf("%c\n", UART_IN);
         uint8_t testt = 255 - ADC0.RESULT;
 
         uint8_t plybk = MAP(testt, 0, 255, 25, 200);
@@ -210,7 +213,7 @@ int main()
         switch (game_state)
         {
         case WAIT:
-            // printf("WAIT\n");
+            printf("WAIT\n");
             break;
         case PLAY_SEQUENCE:
             // plybk = ADC0.RESULT;
@@ -220,7 +223,7 @@ int main()
 
                 // play tone/display current step in sequence
                 sequence_play(sequence_store[j], plybk);
-                // printf("sequence store val @ index %d\n", sequence_store[j]);
+                printf("sequence store val @ index %d\n", sequence_store[j]);
                 // printf("index of for loop %d\n", j);
             }
             // printf("current highest step %d\n", current_index);
@@ -244,17 +247,18 @@ int main()
             uint8_t pb_falling_edge = (pb_previous_state ^ pb_new_state) & pb_previous_state;
             // find rising edge
             uint8_t pb_rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
-            uint8_t success = 1;
-            uint8_t index_compare = 0;
 
-            while (index_compare <= current_index && success == 1)
-            {
+            //  while (index_compare <= current_index && success == 1)
+            
+                printf("indcmpr %d curind,  %d state, %d\n", index_compare, current_index, state);
+                printf("st %d\n", WAIT_T);
                 switch (state)
                 {
                 case COMPARE:
 
                     if (sequence_store[index_compare] != current_input)
                     {
+
                         success = 0;
                         game_state = GAME_OVER;
                         break;
@@ -288,6 +292,7 @@ int main()
                         TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
                         // record player input in array
                         current_input = 0;
+                        // sequence_play(0, 25);
 
                         printf("tone1\n");
                     }
@@ -331,13 +336,12 @@ int main()
                         {
                             sequence_play(1, plybk);
                         }
-                        
-                            // game_state = WAIT;
-                            state = COMPARE;
-                            segs[0] = SEGS_OFF;
-                            segs[1] = SEGS_OFF;
-                            TCA0.SINGLE.CMP0BUF = 0;
-                        
+
+                        // game_state = WAIT;
+                        state = COMPARE;
+                        segs[0] = SEGS_OFF;
+                        segs[1] = SEGS_OFF;
+                        TCA0.SINGLE.CMP0BUF = 0;
                     }
                     break;
                 case TONE2:
@@ -395,7 +399,7 @@ int main()
                     }
                     break;
                 }
-            }
+            
 
             if (index_compare == ++current_index - 1)
                 state = PLAY_SEQUENCE;
