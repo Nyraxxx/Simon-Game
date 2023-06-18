@@ -196,6 +196,8 @@ int main()
     game_state game_state = PLAY_SEQUENCE;
     tone_state state = WAIT_T;
     uint8_t current_index = 0;
+    uint8_t success = 0;
+    uint8_t plybk = 0;
     //--------------------------------------------------------------------------------------------------------------------
     while (1)
     {
@@ -205,19 +207,20 @@ int main()
             // printf("WAIT\n");
             break;
         case PLAY_SEQUENCE:
+            //plybk = ADC0.RESULT;
             // loop for how many steps we are up to
             for (int j = 0; j <= current_index; j++)
             {
 
                 // play tone/display current step in sequence
-                sequence_play(sequence_store[j], 25);
-               // printf("sequence store val @ index %d\n", sequence_store[j]);
-               // printf("index of for loop %d\n", j);
+                sequence_play(sequence_store[j], plybk);
+                // printf("sequence store val @ index %d\n", sequence_store[j]);
+                // printf("index of for loop %d\n", j);
             }
-           // printf("current highest step %d\n", current_index);
+            // printf("current highest step %d\n", current_index);
             printf("END OF PLAY SEQ\n");
             // move up to the next step
-            //current_index++;
+            // current_index++;
             // move to player input so player can try input sequence
             current_input = NULL;
             game_state = PLAYER_INPUT;
@@ -240,38 +243,42 @@ int main()
             case COMPARE:
                 // sequence_store[current_index]
                 //  after button pressed, compare it to master array at relevant pos
-
+                success = 0;
                 // i loops what tone in sequence yes
-                for(int i = 0; i <= current_index; i++){
+                for (int i = 0; i <= current_index; i++)
+                {
                     printf("i = %d\n", i);
                     if (sequence_store[i] == current_input)
                     {
-                        printf("correct");
-                        printf("equ store %d\n", sequence_store[i]);
+                        success = 1;
+                        printf("correct\n");
+                        printf("SEQ store %d\n", sequence_store[i]);
                         printf("%d\n", current_input);
                         // if correct
-                        current_index++;
-                        current_input = NULL;
-                        if(current_input == NULL){
-                        state = WAIT_T;
-                        }
-                        if (i == current_index - 1){
+
+                        if (i == current_index - 1)
+                        {
                             game_state = PLAY_SEQUENCE;
                         }
-                        
                     }
-                    //else if ((current_input != sequence_store[i]) && (current_input != 0))
+
+                    // else if ((current_input != sequence_store[i]) && (current_input != 0))
                     //{
-                        // if not correct
+                    //  if not correct
                     //    printf("ENTERED NOT");
-                        
+
                     //    game_state = GAME_OVER;
                     //}
-                    
                 }
+                if (success == 1){
+                current_index++;
+                current_input = NULL;
+                state = WAIT_T;
+                }
+
                 break;
             case WAIT_T:
-                //printf("wait\n");
+                // printf("wait\n");
 
                 // turn off everything
                 TCA0.SINGLE.CMP0BUF = 0;
