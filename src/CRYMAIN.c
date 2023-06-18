@@ -234,9 +234,11 @@ int main()
 
     while (keep_running)
     {
-        uint8_t testt = 255 - ADC0.RESULT;
+        uint8_t testt = ADC0.RESULT;
 
-        uint8_t plybk = MAP(testt, 0, 255, 25, 200);
+        uint16_t plybk = MAP(testt, -1, 255, 250, 2000);
+       // plybk = plybk >>1;
+       printf("POT %d\n", plybk);
 
         pb_previous_state = pb_new_state;
         pb_new_state = pb_debounced;
@@ -246,63 +248,6 @@ int main()
         // find rising edge
         uint8_t pb_rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
 
-        // button 1
-
-        /*
-        bool keep_running = true;
-
-    while (keep_running)
-    {
-    switch (game_state)
-    {
-        case WAIT
-            break;
-
-        case OUTPUT
-            for (i from 0 to current_limit)
-                print(stored[i]);
-
-            game_state = INPUT;
-            break;
-
-        case INPUT
-            last_input = get_input();
-            game_state = CHECK;
-            break;
-
-        case CHECK
-            if (last_input != stored[check_index])
-            {
-                game_state = LOSE;
-                break;
-            }
-
-            if (counter++ == current_limit)
-            {
-                current_limit++;
-                counter = 0;
-                game_state = OUTPUT;
-            }
-
-            if (current_limit == total_length)
-            {
-                game_state = WIN;
-            }
-
-            break;
-
-        case WIN
-            print "YOU WIN LOL";
-            keep_running = false;
-            break;
-
-        case LOSE
-            print "FAK YOU GOOBY";
-            keep_running = false;
-            break;
-    }
-    }
-        */
        uint8_t arb;
         switch (game_state)
         {
@@ -321,7 +266,7 @@ int main()
             {
 
                 // play tone/display current step in sequence
-                sequence_play(sequence_store[j], 50, 0);
+                sequence_play(sequence_store[j], plybk, 0);
                 printf("sequence store val @ index %d\n", sequence_store[j]);
                 printf("index of for loop %d\n", j);
             }
@@ -393,11 +338,17 @@ int main()
             }
             break;
         case GAME_WIN:
-            printf("YOU WIN LOL\n");
+            printf("SUCCESS\n");
+            printf("SCORE\n");
+            segs[0] = SEGS_BC;
+            segs[0] = SEGS_EF;
+            segs[1] = SEGS_BC;
+            segs[1] = SEGS_EF;
             keep_running = false;
             break;
         case GAME_OVER:
-            printf("FAK YOU GOOBY\n");
+            printf("GAME OVER\n");
+            printf("SCORE\n");
             keep_running = false;
             break;
         }
