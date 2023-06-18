@@ -1,6 +1,6 @@
 #include "hardware.h"
 #include <stdio.h>
-
+//initialise buzzer
 void buzzer_init(void)
 {
     PORTB.DIRSET = PIN0_bm;
@@ -31,7 +31,7 @@ void pot_init(void){
     // Select 12-bit resolution, single-ended
     ADC0.COMMAND = ADC_MODE_SINGLE_8BIT_gc | ADC_START_IMMEDIATE_gc;
 }
-//function to constrain pot values
+//function to constrain pot values to desired outcome
 uint32_t MAP(uint32_t VALUE, uint32_t INmin, uint32_t INmax, uint32_t OUTmin, uint32_t OUTmax)
 {
     return ((((VALUE - INmin)*(OUTmax - OUTmin))/(INmax - INmin)) + OUTmin);
