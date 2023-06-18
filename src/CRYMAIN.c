@@ -211,7 +211,7 @@ int main()
     {
         uint8_t testt = ADC0.RESULT;
 
-        uint16_t plybk = MAP(testt, -1, 255, 2500, 20000);
+        uint16_t plybk = MAP(testt, -1, 255, 250, 2000);
         // plybk = plybk >>1;
 
         // debouncing variables run constantly for buttons
