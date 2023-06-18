@@ -169,10 +169,10 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
-        
+
     case 0:
-     printf("OFF");
-    for (k = 0; k <= playback; k++)
+        printf("OFF");
+        for (k = 0; k <= playback; k++)
         {
             arb = arb + 1;
 
@@ -200,7 +200,6 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
         // else
         //{
 
-        
         //
 
         segs[0] = SEGS_OFF;
@@ -304,9 +303,16 @@ int main()
     }
     }
         */
+       uint8_t arb;
         switch (game_state)
         {
         case WAIT:
+            for (int k = 0; k <= 100; k++)
+            {
+                    arb = arb + 1;
+                printf("k%d", k);
+            }
+            game_state = PLAY_SEQUENCE;
             break;
         case PLAY_SEQUENCE:
 
@@ -361,7 +367,6 @@ int main()
                 printf("tone4\n");
                 game_state = COMPARE;
             }
-            
 
             break;
         case COMPARE:
@@ -375,14 +380,15 @@ int main()
             {
                 current_index++;
                 check_index = 0;
-                game_state = PLAY_SEQUENCE;
+                game_state = WAIT;
             }
 
             if (current_index == 32)
             {
                 game_state = GAME_WIN;
             }
-            if(game_state == COMPARE){
+            if (game_state == COMPARE)
+            {
                 game_state = PLAYER_INPUT;
             }
             break;
