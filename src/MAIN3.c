@@ -205,6 +205,7 @@ int main()
      
 
         uint8_t plybk = MAP(testt, 0, 255, 25, 200);
+        plybk = plybk >> 1;
         switch (game_state)
         {
         case WAIT:
@@ -278,7 +279,7 @@ int main()
                 segs[1] = SEGS_OFF;
 
                 // button 1
-                if (pb_falling_edge & PB1 | UART_IN == 1)
+                if (pb_falling_edge & PB1 | UART_IN == '1' | UART_IN == 'q')
                 {
                     // set state to turn off tone when button releases
                     state = TONE1;
