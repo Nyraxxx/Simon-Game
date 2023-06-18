@@ -197,7 +197,7 @@ int main()
     tone_state state = WAIT_T;
     uint8_t current_index = 0;
     uint8_t success = 0;
-
+    char UART_IN = uart_getc();
     //--------------------------------------------------------------------------------------------------------------------
     while (1)
     {
@@ -278,7 +278,7 @@ int main()
                 segs[1] = SEGS_OFF;
 
                 // button 1
-                if (pb_falling_edge & PB1)
+                if (pb_falling_edge & PB1 | UART_IN == 1)
                 {
                     // set state to turn off tone when button releases
                     state = TONE1;
@@ -296,7 +296,7 @@ int main()
                     // printf("input %d \n", player_input[current_step]);
                     // current_step = current_step + 1;
                 }
-                else if (pb_falling_edge & PB2)
+                else if (pb_falling_edge & PB2 | UART_IN == 2)
                 {
                     state = TONE2;
                     segs[0] = SEGS_BC;
@@ -306,7 +306,7 @@ int main()
                     current_input = 1;
                     printf("tone2\n");
                 }
-                else if (pb_falling_edge & PB3)
+                else if (pb_falling_edge & PB3 | UART_IN == 3)
                 {
                     state = TONE3;
                     segs[1] = SEGS_EF;
@@ -316,7 +316,7 @@ int main()
                     current_input = 2;
                     printf("tone3\n");
                 }
-                else if (pb_falling_edge & PB4)
+                else if (pb_falling_edge & PB4 | UART_IN == 4)
                 {
                     state = TONE4;
                     segs[1] = SEGS_BC;
