@@ -169,16 +169,23 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
-        break;
+        
     case 0:
+     printf("OFF");
+    for (k = 0; k <= playback; k++)
+        {
+            arb = arb + 1;
+
+            printf("k%d", k);
+        }
         // printf("CASE 0");
-        //if (manual == 1)
+        // if (manual == 1)
         //{
         //    while (1)
         //    {
         //        pb_previous_state = pb_new_state;
         //        pb_new_state = pb_debounced;
-//
+        //
         //        // find rising edge
         //        uint8_t rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
         //        if (rising_edge & (PB1 | PB2 | PB3 | PB4))
@@ -190,25 +197,19 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
         //        }
         //    }
         //}
-        //else
+        // else
         //{
 
-            for (k = 0; k <= playback; k++)
-            {
-                arb = arb + 1;
+        
+        //
 
-                printf("k%d", k);
-            }
-            // printf("OFF");
-
-            segs[0] = SEGS_OFF;
-            segs[1] = SEGS_OFF;
-            TCA0.SINGLE.CMP0BUF = 0;
-            printf("\n");
-            break;
-        }
+        segs[0] = SEGS_OFF;
+        segs[1] = SEGS_OFF;
+        TCA0.SINGLE.CMP0BUF = 0;
+        printf("stop\n");
+        break;
     }
-
+}
 
 int main()
 {
@@ -315,10 +316,10 @@ int main()
 
                 // play tone/display current step in sequence
                 sequence_play(sequence_store[j], 50, 0);
-                // printf("sequence store val @ index %d\n", sequence_store[j]);
-                // printf("index of for loop %d\n", j);
+                printf("sequence store val @ index %d\n", sequence_store[j]);
+                printf("index of for loop %d\n", j);
             }
-            // printf("current highest step %d\n", current_index);
+            printf("current highest step %d\n", current_index);
             printf("END OF PLAY SEQ\n");
             // move up to the next step
             // current_index++;
@@ -337,26 +338,30 @@ int main()
 
                 printf("tone1\n");
                 // button 1 released
+                game_state = COMPARE;
             }
             else if (pb_falling_edge & PB2)
             {
                 sequence_play(1, plybk, 0);
                 current_input = 1;
                 printf("tone2\n");
+                game_state = COMPARE;
             }
             else if (pb_falling_edge & PB3)
             {
                 sequence_play(2, plybk, 0);
                 current_input = 2;
                 printf("tone3\n");
+                game_state = COMPARE;
             }
             else if (pb_falling_edge & PB4)
             {
                 sequence_play(3, plybk, 0);
                 current_input = 3;
                 printf("tone4\n");
+                game_state = COMPARE;
             }
-            game_state = COMPARE;
+            
 
             break;
         case COMPARE:
@@ -376,6 +381,9 @@ int main()
             if (current_index == 32)
             {
                 game_state = GAME_WIN;
+            }
+            if(game_state == COMPARE){
+                game_state = PLAYER_INPUT;
             }
             break;
         case GAME_WIN:
