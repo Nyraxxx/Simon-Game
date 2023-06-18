@@ -219,7 +219,7 @@ int main()
             // move up to the next step
             //current_index++;
             // move to player input so player can try input sequence
-            current_input = 0;
+            current_input = NULL;
             game_state = PLAYER_INPUT;
 
             break;
@@ -246,12 +246,13 @@ int main()
                     printf("i = %d\n", i);
                     if (sequence_store[i] == current_input)
                     {
+                        printf("correct");
                         printf("equ store %d\n", sequence_store[i]);
                         printf("%d\n", current_input);
                         // if correct
                         current_index++;
-                        current_input = 0;
-                        if(current_input == 0){
+                        current_input = NULL;
+                        if(current_input == NULL){
                         state = WAIT_T;
                         }
                         if (i == current_index - 1){
