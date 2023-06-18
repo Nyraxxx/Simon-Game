@@ -29,7 +29,7 @@ volatile uint8_t segs[] = {SEGS_OFF, SEGS_OFF}; // segs initially off
 volatile uint8_t pb_debounced = 0xFF;
 uint8_t pb_previous_state = 0xFF;
 uint8_t pb_new_state = 0xFF;
-
+// initiualise push buttons
 void pb_init(void)
 {
     // already configured as inputs
@@ -39,7 +39,7 @@ void pb_init(void)
     PORTA.PIN6CTRL = PORT_PULLUPEN_bm;
     PORTA.PIN7CTRL = PORT_PULLUPEN_bm;
 }
-
+// button debounce called in interrupts
 void pb_debounce(void)
 {
 
@@ -62,27 +62,17 @@ void pb_debounce(void)
     pb_debounced ^= (count1 & count0);
 }
 //--------------------------------------------------------------------------------------------------------------------
+// state machine definition
 typedef enum
 {
-    WAIT, //(??)
-    PLAY_SEQUENCE,
-    PLAYER_INPUT,
-    GAME_OVER,
-    GAME_WIN,
-    COMPARE
+    WAIT,          // delay for sequence playback
+    PLAY_SEQUENCE, // plays simon sequence up until current index
+    PLAYER_INPUT,  // records player input
+    GAME_OVER,     // game over
+    GAME_WIN,      // sucess
+    COMPARE        // logic for comparing if input is correct
 
 } game_state;
-//--------------------------------------------------------------------------------------------------------------------
-typedef enum
-{
-    TONE1,
-    TONE2,
-    TONE3,
-    TONE4,
-    WAIT_T,
-    // COMPARE
-
-} tone_state;
 //--------------------------------------------------------------------------------------------------------------------
 volatile uint32_t STATE_LFSR = 0x11079606;
 uint8_t sequence_STEP()
@@ -97,38 +87,41 @@ uint8_t sequence_STEP()
         STATE_LFSR = STATE_LFSR ^ MASK;
     }
     volatile uint8_t STEP = STATE_LFSR & 0b11;
-    // printf("step %0d\n", STEP);
+
     return STEP;
 }
 //--------------------------------------------------------------------------------------------------------------------
-volatile uint16_t sequence_store[51];
-volatile uint16_t player_input[51];
+volatile uint16_t sequence_store[32]; // 32 acccording to gradescope length
+volatile uint16_t player_input[32];
+uint16_t player_score;
 uint8_t current_input = 0;
+// generate sequence and store in array
 void sequence_GEN(void)
 {
     uint16_t i;
-    printf("\nSEQUENCE MASTER: \n");
+
     for (i = 0; i <= 51; i++)
     {
         sequence_store[i] = sequence_STEP();
 
-        // printf(sequence_store[i]);
         uint8_t seqq = sequence_store[i];
-        printf(" %d", seqq);
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
+// Play sequence at desired tone and playback
 void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 {
-    // this doesnt live update hmmm
+    // arbitrary number to do math with so loop delyays
     int arb;
     uint8_t k = 0;
     uint8_t toggle = 1;
+    // toggle for buzzer on and off
 
     switch (toggle)
     {
 
     case 1:
+        // tone 1
         if (num == 0)
         {
 
@@ -139,6 +132,7 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
+        // tone 2
         else if (num == 1)
         {
 
@@ -149,6 +143,7 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
+        // tone 3
         else if (num == 2)
         {
 
@@ -159,6 +154,7 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
+        // tone 4
         else if (num == 3)
         {
 
@@ -169,7 +165,7 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             toggle = 0;
         }
-
+        // fall through case to turn off after delay
     case 0:
         printf("OFF");
         for (k = 0; k <= playback; k++)
@@ -178,37 +174,17 @@ void sequence_play(uint8_t num, uint8_t playback, uint8_t manual)
 
             printf("k%d", k);
         }
-        // printf("CASE 0");
-        // if (manual == 1)
-        //{
-        //    while (1)
-        //    {
-        //        pb_previous_state = pb_new_state;
-        //        pb_new_state = pb_debounced;
-        //
-        //        // find rising edge
-        //        uint8_t rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
-        //        if (rising_edge & (PB1 | PB2 | PB3 | PB4))
-        //        {
-        //            segs[0] = SEGS_OFF;
-        //            segs[1] = SEGS_OFF;
-        //            TCA0.SINGLE.CMP0BUF = 0;
-        //            break;
-        //        }
-        //    }
-        //}
-        // else
-        //{
-
-        //
 
         segs[0] = SEGS_OFF;
         segs[1] = SEGS_OFF;
         TCA0.SINGLE.CMP0BUF = 0;
-        printf("stop\n");
+
         break;
     }
 }
+
+//--------------------------------------------------------------------------------------------------------------------
+// MAIN
 
 int main()
 {
@@ -222,24 +198,23 @@ int main()
     pb_init();
     sequence_GEN();
     //--------------------------------------------------------------------------------------------------------------------
+    // initialise states
     game_state game_state = PLAY_SEQUENCE;
-    tone_state state = WAIT_T;
+
     uint8_t current_index = 0;
-    //  uint8_t success = 0;
-    char UART_IN;
-    //.char UART_IN = getchar();
-    //--------------------------------------------------------------------------------------------------------------------
+
     uint8_t keep_running = 1;
     uint8_t check_index = 0;
-
+    //--------------------------------------------------------------------------------------------------------------------
+    // main while loop
     while (keep_running)
     {
         uint8_t testt = ADC0.RESULT;
 
-        uint16_t plybk = MAP(testt, -1, 255, 250, 2000);
-       // plybk = plybk >>1;
-       printf("POT %d\n", plybk);
+        uint16_t plybk = MAP(testt, -1, 255, 2500, 20000);
+        // plybk = plybk >>1;
 
+        // debouncing variables run constantly for buttons
         pb_previous_state = pb_new_state;
         pb_new_state = pb_debounced;
 
@@ -248,17 +223,23 @@ int main()
         // find rising edge
         uint8_t pb_rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
 
-       uint8_t arb;
+        // arbitrary value for math related delays
+        uint8_t arb;
         switch (game_state)
         {
+            // delay before playing seqence
         case WAIT:
             for (int k = 0; k <= 100; k++)
             {
-                    arb = arb + 1;
+                arb = arb + 1;
                 printf("k%d", k);
             }
+           
+            
+            // then play sequence
             game_state = PLAY_SEQUENCE;
             break;
+
         case PLAY_SEQUENCE:
 
             //  loop for how many steps we are up to
@@ -267,20 +248,19 @@ int main()
 
                 // play tone/display current step in sequence
                 sequence_play(sequence_store[j], plybk, 0);
-                printf("sequence store val @ index %d\n", sequence_store[j]);
-                printf("index of for loop %d\n", j);
             }
-            printf("current highest step %d\n", current_index);
-            printf("END OF PLAY SEQ\n");
-            // move up to the next step
-            // current_index++;
-            // move to player input so player can try input sequence
+
+            // reset value to test sequence  correctly
             current_input = NULL;
+            // move to player input so player can try input sequence
+
             game_state = PLAYER_INPUT;
 
             break;
+            // player input case
         case PLAYER_INPUT:
-
+            // test for button presses
+            // button 1
             if (pb_falling_edge & PB1)
             {
 
@@ -291,6 +271,7 @@ int main()
                 // button 1 released
                 game_state = COMPARE;
             }
+            // button 2
             else if (pb_falling_edge & PB2)
             {
                 sequence_play(1, plybk, 0);
@@ -298,6 +279,7 @@ int main()
                 printf("tone2\n");
                 game_state = COMPARE;
             }
+            // button 3
             else if (pb_falling_edge & PB3)
             {
                 sequence_play(2, plybk, 0);
@@ -305,6 +287,7 @@ int main()
                 printf("tone3\n");
                 game_state = COMPARE;
             }
+            // button 4;
             else if (pb_falling_edge & PB4)
             {
                 sequence_play(3, plybk, 0);
@@ -314,38 +297,57 @@ int main()
             }
 
             break;
+            // logic state
         case COMPARE:
+            // lose if press wrong button
             if (current_input != sequence_store[check_index])
             {
                 game_state = GAME_OVER;
                 break;
             }
-
+            // continue loop if correct
             if (check_index++ == current_index)
             {
                 current_index++;
+                player_score = current_index++ + player_score;
                 check_index = 0;
+                printf("SUCCESS\n");
+                //display sucess
+               
+                
+                segs[0] = SEGS_EF;
+                segs[1] = SEGS_EF; 
+                segs[1] = SEGS_BC;
+               segs[0] = SEGS_BC;
+            
+                
+                
+                printf("SCORE: %d\n"), player_score;
                 game_state = WAIT;
             }
-
+            // win case
             if (current_index == 32)
             {
                 game_state = GAME_WIN;
             }
+            // return to player input after logic state
             if (game_state == COMPARE)
             {
                 game_state = PLAYER_INPUT;
             }
             break;
+            // win, light up segments
         case GAME_WIN:
             printf("SUCCESS\n");
-            printf("SCORE\n");
+            printf("SCORE: %d\n", player_score);
             segs[0] = SEGS_BC;
             segs[0] = SEGS_EF;
             segs[1] = SEGS_BC;
             segs[1] = SEGS_EF;
+            // break while
             keep_running = false;
             break;
+            // lose, break while
         case GAME_OVER:
             printf("GAME OVER\n");
             printf("SCORE\n");
