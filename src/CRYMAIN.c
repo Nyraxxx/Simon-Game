@@ -234,8 +234,7 @@ int main()
                 arb = arb + 1;
                 printf("k%d", k);
             }
-           
-            
+
             // then play sequence
             game_state = PLAY_SEQUENCE;
             break;
@@ -312,16 +311,7 @@ int main()
                 player_score = current_index++ + player_score;
                 check_index = 0;
                 printf("SUCCESS\n");
-                //display sucess
-               
-                
-                segs[0] = SEGS_EF;
-                segs[1] = SEGS_EF; 
-                segs[1] = SEGS_BC;
-               segs[0] = SEGS_BC;
-            
-                
-                
+
                 printf("SCORE: %d\n"), player_score;
                 game_state = WAIT;
             }
@@ -340,10 +330,7 @@ int main()
         case GAME_WIN:
             printf("SUCCESS\n");
             printf("SCORE: %d\n", player_score);
-            segs[0] = SEGS_BC;
-            segs[0] = SEGS_EF;
-            segs[1] = SEGS_BC;
-            segs[1] = SEGS_EF;
+
             // break while
             keep_running = false;
             break;

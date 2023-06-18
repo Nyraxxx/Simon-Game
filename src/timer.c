@@ -30,7 +30,7 @@ void get_time(void){
     
 }
 
-//need to do something here with playback delay?
+//ISR for debounce and writing to spi
 ISR(TCB0_INT_vect) {
     pb_debounce();
 
