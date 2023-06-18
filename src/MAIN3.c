@@ -125,7 +125,7 @@ void sequence_play(uint8_t num, uint8_t playback)
     {
 
     case 1:
-        if (num == 1)
+        if (num == 0)
         {
 
             segs[0] = SEGS_EF;
@@ -134,7 +134,7 @@ void sequence_play(uint8_t num, uint8_t playback)
             TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
             toggle = 0;
         }
-        else if (num == 2)
+        else if (num == 1)
         {
 
             segs[0] = SEGS_BC;
@@ -143,7 +143,7 @@ void sequence_play(uint8_t num, uint8_t playback)
             TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
             toggle = 0;
         }
-        else if (num == 3)
+        else if (num == 2)
         {
 
             segs[1] = SEGS_EF;
@@ -152,7 +152,7 @@ void sequence_play(uint8_t num, uint8_t playback)
             TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
             toggle = 0;
         }
-        else if (num == 4)
+        else if (num == 3)
         {
 
             segs[1] = SEGS_BC;
@@ -197,18 +197,22 @@ int main()
     tone_state state = WAIT_T;
     uint8_t current_index = 0;
     uint8_t success = 0;
-    uint8_t plybk = 0;
+
     //--------------------------------------------------------------------------------------------------------------------
     while (1)
     {
+        uint8_t testt = 255 -  ADC0.RESULT;
+     
+
+        uint8_t plybk = MAP(testt, 0, 255, 25, 200);
         switch (game_state)
         {
         case WAIT:
             // printf("WAIT\n");
             break;
         case PLAY_SEQUENCE:
-            //plybk = ADC0.RESULT;
-            // loop for how many steps we are up to
+            // plybk = ADC0.RESULT;
+            //  loop for how many steps we are up to
             for (int j = 0; j <= current_index; j++)
             {
 
@@ -243,37 +247,25 @@ int main()
             case COMPARE:
                 // sequence_store[current_index]
                 //  after button pressed, compare it to master array at relevant pos
-                success = 0;
+                success = 1;
                 // i loops what tone in sequence yes
                 for (int i = 0; i <= current_index; i++)
                 {
                     printf("i = %d\n", i);
-                    if (sequence_store[i] == current_input)
+                    if (sequence_store[i] != current_input)
                     {
-                        success = 1;
-                        printf("correct\n");
-                        printf("SEQ store %d\n", sequence_store[i]);
-                        printf("%d\n", current_input);
-                        // if correct
-
-                        if (i == current_index - 1)
-                        {
-                            game_state = PLAY_SEQUENCE;
-                        }
+                        success = 0;
+                        break;
                     }
+                    // if correct
 
-                    // else if ((current_input != sequence_store[i]) && (current_input != 0))
-                    //{
-                    //  if not correct
-                    //    printf("ENTERED NOT");
-
-                    //    game_state = GAME_OVER;
-                    //}
                 }
-                if (success == 1){
-                current_index++;
-                current_input = NULL;
-                state = WAIT_T;
+                if (success == 1)
+                {
+                    current_index++;
+                    current_input = NULL;
+                    state = WAIT_T;
+                    game_state = PLAY_SEQUENCE;
                 }
 
                 break;
