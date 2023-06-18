@@ -197,15 +197,16 @@ int main()
     tone_state state = WAIT_T;
     uint8_t current_index = 0;
     uint8_t success = 0;
-    char UART_IN = uart_getc();
+    char UART_IN = getchar();
     //--------------------------------------------------------------------------------------------------------------------
     while (1)
     {
-        uint8_t testt = 255 -  ADC0.RESULT;
-     
+        // getchar
+        printf("%c\n", UART_IN);
+        uint8_t testt = 255 - ADC0.RESULT;
 
         uint8_t plybk = MAP(testt, 0, 255, 25, 200);
-        plybk = plybk >> 1;
+        // plybk = plybk >> 1;
         switch (game_state)
         {
         case WAIT:
@@ -243,143 +244,161 @@ int main()
             uint8_t pb_falling_edge = (pb_previous_state ^ pb_new_state) & pb_previous_state;
             // find rising edge
             uint8_t pb_rising_edge = (pb_previous_state ^ pb_new_state) & pb_new_state;
-            switch (state)
+            uint8_t success = 1;
+            uint8_t index_compare = 0;
+
+            while (index_compare <= current_index && success == 1)
             {
-            case COMPARE:
-                // sequence_store[current_index]
-                //  after button pressed, compare it to master array at relevant pos
-                success = 1;
-                // i loops what tone in sequence yes
-                for (int i = 0; i <= current_index; i++)
+                switch (state)
                 {
-                    printf("i = %d\n", i);
-                    if (sequence_store[i] != current_input)
+                case COMPARE:
+
+                    if (sequence_store[index_compare] != current_input)
                     {
                         success = 0;
+                        game_state = GAME_OVER;
                         break;
                     }
-                    // if correct
 
-                }
-                if (success == 1)
-                {
-                    current_index++;
-                    current_input = NULL;
-                    state = WAIT_T;
-                    game_state = PLAY_SEQUENCE;
-                }
+                    if (success == 1)
+                    {
+                        index_compare++;
+                        current_input = NULL;
+                        state = WAIT;
+                    }
 
-                break;
-            case WAIT_T:
-                // printf("wait\n");
+                    break;
+                case WAIT_T:
 
-                // turn off everything
-                TCA0.SINGLE.CMP0BUF = 0;
-                segs[0] = SEGS_OFF;
-                segs[1] = SEGS_OFF;
-
-                // button 1
-                if (pb_falling_edge & PB1 | UART_IN == '1' | UART_IN == 'q')
-                {
-                    // set state to turn off tone when button releases
-                    state = TONE1;
-                    // turn on correct screen display
-                    segs[0] = SEGS_EF;
-                    segs[1] = SEGS_OFF;
-                    // start playing tone on buzzer
-                    TCA0.SINGLE.PERBUF = TONE1_PER;
-                    TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
-                    // record player input in array
-                    current_input = 0;
-
-                    printf("tone1\n");
-                    // printf("step %d\n", current_step);
-                    // printf("input %d \n", player_input[current_step]);
-                    // current_step = current_step + 1;
-                }
-                else if (pb_falling_edge & PB2 | UART_IN == 2)
-                {
-                    state = TONE2;
-                    segs[0] = SEGS_BC;
-                    segs[1] = SEGS_OFF;
-                    TCA0.SINGLE.PERBUF = TONE2_PER;
-                    TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
-                    current_input = 1;
-                    printf("tone2\n");
-                }
-                else if (pb_falling_edge & PB3 | UART_IN == 3)
-                {
-                    state = TONE3;
-                    segs[1] = SEGS_EF;
-                    segs[0] = SEGS_OFF;
-                    TCA0.SINGLE.PERBUF = TONE3_PER;
-                    TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
-                    current_input = 2;
-                    printf("tone3\n");
-                }
-                else if (pb_falling_edge & PB4 | UART_IN == 4)
-                {
-                    state = TONE4;
-                    segs[1] = SEGS_BC;
-                    segs[0] = SEGS_OFF;
-                    TCA0.SINGLE.PERBUF = TONE4_PER;
-                    TCA0.SINGLE.CMP0BUF = TONE4_PER >> 1;
-                    current_input = 3;
-                    printf("tone4\n");
-                }
-
-                break;
-            case TONE1:
-                // button 1 released
-                if (pb_rising_edge & PB1)
-                {
-                    // game_state = WAIT;
-                    state = COMPARE;
-                    segs[0] = SEGS_OFF;
-                    segs[1] = SEGS_OFF;
+                    // turn off everything
                     TCA0.SINGLE.CMP0BUF = 0;
-                }
-                break;
-            case TONE2:
-                if (pb_rising_edge & PB2)
-                {
-
-                    // game_state = WAIT;
-                    state = COMPARE;
                     segs[0] = SEGS_OFF;
                     segs[1] = SEGS_OFF;
-                    TCA0.SINGLE.CMP0BUF = 0;
-                }
 
-                break;
-            case TONE3:
-                if (pb_rising_edge & PB3)
-                {
-                    // game_state = WAIT;
-                    state = COMPARE;
-                    segs[0] = SEGS_OFF;
-                    segs[1] = SEGS_OFF;
-                    TCA0.SINGLE.CMP0BUF = 0;
-                }
+                    // button 1
+                    if (pb_falling_edge & PB1 | UART_IN == '1' | UART_IN == 'q')
+                    {
+                        // set state to turn off tone when button releases
+                        state = TONE1;
+                        // turn on correct screen display
+                        segs[0] = SEGS_EF;
+                        segs[1] = SEGS_OFF;
+                        // start playing tone on buzzer
+                        TCA0.SINGLE.PERBUF = TONE1_PER;
+                        TCA0.SINGLE.CMP0BUF = TONE1_PER >> 1;
+                        // record player input in array
+                        current_input = 0;
 
-                break;
-            case TONE4:
-                if (pb_rising_edge & PB4)
-                {
-                    // game_state = WAIT;
-                    state = COMPARE;
-                    segs[0] = SEGS_OFF;
-                    segs[1] = SEGS_OFF;
-                    TCA0.SINGLE.CMP0BUF = 0;
-                }
-                break;
+                        printf("tone1\n");
+                    }
+                    else if ((pb_falling_edge & PB2) | UART_IN == '2' | UART_IN == 'w')
+                    {
+                        state = TONE2;
+                        segs[0] = SEGS_BC;
+                        segs[1] = SEGS_OFF;
+                        TCA0.SINGLE.PERBUF = TONE2_PER;
+                        TCA0.SINGLE.CMP0BUF = TONE2_PER >> 1;
+                        current_input = 1;
+                        printf("tone2\n");
+                    }
+                    else if (pb_falling_edge & PB3 | UART_IN == '3' | UART_IN == 'e')
+                    {
+                        state = TONE3;
+                        segs[1] = SEGS_EF;
+                        segs[0] = SEGS_OFF;
+                        TCA0.SINGLE.PERBUF = TONE3_PER;
+                        TCA0.SINGLE.CMP0BUF = TONE3_PER >> 1;
+                        current_input = 2;
+                        printf("tone3\n");
+                    }
+                    else if (pb_falling_edge & PB4 | UART_IN == '4' | UART_IN == 'r')
+                    {
+                        state = TONE4;
+                        segs[1] = SEGS_BC;
+                        segs[0] = SEGS_OFF;
+                        TCA0.SINGLE.PERBUF = TONE4_PER;
+                        TCA0.SINGLE.CMP0BUF = TONE4_PER >> 1;
+                        current_input = 3;
+                        printf("tone4\n");
+                    }
 
-                // printf("PLAY INP\n");
-                // if (current_index == 5)
-                //{
-                //     game_state = WAIT;
-                // }
+                    break;
+                case TONE1:
+                    // button 1 released
+                    if ((pb_rising_edge & PB1) | UART_IN == '1')
+                    {
+                        if (UART_IN == '1' | UART_IN == 'q')
+                        {
+                            sequence_play(1, plybk);
+                        }
+                        
+                            // game_state = WAIT;
+                            state = COMPARE;
+                            segs[0] = SEGS_OFF;
+                            segs[1] = SEGS_OFF;
+                            TCA0.SINGLE.CMP0BUF = 0;
+                        
+                    }
+                    break;
+                case TONE2:
+                    if (pb_rising_edge & PB2 | UART_IN == '2')
+                    {
+                        if (UART_IN == '2' | UART_IN == 'w')
+                        {
+                            sequence_play(2, plybk);
+                        }
+                        else
+                        {
+
+                            // game_state = WAIT;
+                            state = COMPARE;
+                            segs[0] = SEGS_OFF;
+                            segs[1] = SEGS_OFF;
+                            TCA0.SINGLE.CMP0BUF = 0;
+                        }
+                    }
+
+                    break;
+                case TONE3:
+                    if (pb_rising_edge & PB3 | UART_IN == '3')
+                    {
+                        if (UART_IN == '3' | UART_IN == 'e')
+                        {
+                            sequence_play(3, plybk);
+                        }
+                        else
+                        {
+                            // game_state = WAIT;
+                            state = COMPARE;
+                            segs[0] = SEGS_OFF;
+                            segs[1] = SEGS_OFF;
+                            TCA0.SINGLE.CMP0BUF = 0;
+                        }
+                    }
+
+                    break;
+                case TONE4:
+                    if (pb_rising_edge & PB4 | UART_IN == '4')
+                    {
+                        if (UART_IN == '4' | UART_IN == 'r')
+                        {
+                            sequence_play(4, plybk);
+                        }
+                        else
+                        {
+                            // game_state = WAIT;
+                            state = COMPARE;
+                            segs[0] = SEGS_OFF;
+                            segs[1] = SEGS_OFF;
+                            TCA0.SINGLE.CMP0BUF = 0;
+                        }
+                    }
+                    break;
+                }
             }
+
+            if (index_compare == ++current_index - 1)
+                state = PLAY_SEQUENCE;
             break;
 
         case GAME_WIN:
